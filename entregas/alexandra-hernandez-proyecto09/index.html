@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Certificación</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="header-left">
+        <div class="header-icon">❀</div>
+        <div>
+          <h1>Certificación de asistencia</h1>
+          <p>Gestión de inscripciones, asistencia y certificaciones</p>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="abrirModal()">+ Nueva inscripción</button>
+    </div>
+
+    <div class="stats-grid" id="stats"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="todos" onclick="cambiarTab(this, 'todos')">Todos</button>
+      <button class="tab" data-tab="proximo" onclick="cambiarTab(this, 'proximo')">Próximamente</button>
+      <button class="tab" data-tab="en_curso" onclick="cambiarTab(this, 'en_curso')">▶ En curso</button>
+      <button class="tab" data-tab="finalizado" onclick="cambiarTab(this, 'finalizado')">✓ Finalizados</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters">
+      <input type="text" id="search" placeholder="Buscar asistente o evento" oninput="render()" />
+      <select id="filterEvento" onchange="render()">
+        <option value="">Todos los eventos</option>
+      </select>
+      <select id="filterModalidad" onchange="render()">
+        <option value="">Presencial y virtual</option>
+        <option value="presencial">Presencial</option>
+        <option value="virtual">Virtual</option>
+      </select>
+      <select id="filterEstado" onchange="render()">
+        <option value="">Todos los estados</option>
+        <option value="APROBADO">Aprobados</option>
+        <option value="REPROBADO">Reprobados</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('asistente')">Asistente <span class="sort-arrow" id="s-asistente"></span></th>
+            <th onclick="sortBy('evento')">Evento <span class="sort-arrow" id="s-evento"></span></th>
+            <th onclick="sortBy('modalidad')">Modalidad <span class="sort-arrow" id="s-modalidad"></span></th>
+            <th class="center" onclick="sortBy('obligatorio')">Obligatorio <span class="sort-arrow"
+                id="s-obligatorio"></span></th>
+            <th class="center" onclick="sortBy('dias')">Días <span class="sort-arrow" id="s-dias"></span></th>
+            <th onclick="sortBy('pct')">Asistencia <span class="sort-arrow" id="s-pct"></span></th>
+            <th class="center" onclick="sortBy('estadoEvento')">Estado evento <span class="sort-arrow"
+                id="s-estadoEvento"></span></th>
+            <th onclick="sortBy('estado')">Certificación <span class="sort-arrow" id="s-estado"></span></th>
+            <th class="center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="cerrarModalClick(event)">
+    <div class="modal" id="modal">
+
+      <div class="modal-header">
+        <h2 id="modalTitulo">Nueva inscripción</h2>
+        <button class="modal-close" onclick="cerrarModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editId" />
+
+        <div class="section-label">Datos del asistente</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre completo</label>
+            <input type="text" id="inputAsistente" placeholder="Ej: Ana Hernández" />
+            <span class="field-error" id="errAsistente"></span>
+          </div>
+          <div class="form-group">
+            <label>Carrera / Programa</label>
+            <input type="text" id="inputCarrera" placeholder="Ej: Ingeniería informática" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo electrónico</label>
+            <input type="email" id="inputEmail" placeholder="correo@ejemplo.com" />
+            <span class="field-error" id="errEmail"></span>
+          </div>
+          <div class="form-group">
+            <label>Teléfono / WhatsApp</label>
+            <input type="tel" id="inputTelefono" placeholder="+57 300 000 0000" />
+          </div>
+        </div>
+
+        <div class="section-label">Datos del evento</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Evento</label>
+            <div class="evento-wrap">
+              <select id="inputEvento" onchange="onEventoSelect()">
+                <option value="">— Evento existente —</option>
+              </select>
+              <span class="or-label">o escribe uno nuevo</span>
+              <input type="text" id="inputEventoNuevo" placeholder="Nombre del nuevo evento…"
+                oninput="onEventoInput()" />
+            </div>
+            <span class="field-error" id="errEvento"></span>
+          </div>
+          <div class="form-group">
+            <label>Modalidad</label>
+            <div class="toggle-group" id="modalidadGroup">
+              <button type="button" class="toggle-btn active" data-val="presencial"
+                onclick="selToggle('modalidadGroup', this)">Presencial</button>
+              <button type="button" class="toggle-btn" data-val="virtual"
+                onclick="selToggle('modalidadGroup', this)">Virtual</button>
+            </div>
+            <input type="hidden" id="inputModalidad" value="presencial" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha de inicio</label>
+            <input type="date" id="inputFechaInicio" onchange="actualizarEstadoEvento()" />
+            <span class="field-error" id="errFechaInicio"></span>
+          </div>
+          <div class="form-group">
+            <label>Fecha de fin</label>
+            <input type="date" id="inputFechaFin" onchange="actualizarEstadoEvento()" />
+            <span class="field-error" id="errFechaFin"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>¿Asistencia obligatorio?</label>
+            <div class="toggle-group" id="obligatorioGroup">
+              <button type="button" class="toggle-btn active" data-val="si"
+                onclick="selToggle('obligatorioGroup', this)">Sí</button>
+              <button type="button" class="toggle-btn" data-val="no"
+                onclick="selToggle('obligatorioGroup', this)">No</button>
+            </div>
+            <input type="hidden" id="inputObligatorio" value="si" />
+          </div>
+          <div class="form-group">
+            <label>% mínimo requerido</label>
+            <input type="number" id="inputReq" min="1" max="100" placeholder="80" oninput="calcularPreview()" />
+            <span class="field-error" id="errReq"></span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: Asistencia -->
+        <div class="section-label">Registro de asistencia</div>
+        <div class="form-row three-col">
+          <div class="form-group">
+            <label>Días presentes</label>
+            <input type="number" id="inputPresente" min="0" placeholder="0" oninput="calcularPreview()" />
+            <span class="field-error" id="errPresente"></span>
+          </div>
+          <div class="form-group">
+            <label>Días totales</label>
+            <input type="number" id="inputTotales" min="1" placeholder="0" oninput="calcularPreview()" />
+            <span class="field-error" id="errTotales"></span>
+          </div>
+          <div class="form-group">
+            <label>Estado del evento</label>
+            <div class="estado-evento-preview" id="estadoEventoPreview">—</div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-box" id="previewBox" style="display:none">
+          <div class="preview-row">
+            <span class="preview-label">Porcentaje obtenido:</span>
+            <span id="prevPct" class="preview-val">—</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">Certificación:</span>
+            <span id="prevEstado" class="preview-val">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarRegistro()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="detalleOverlay" onclick="cerrarDetalleClick(event)">
+    <div class="modal modal-sm" id="detalleModal">
+      <div class="modal-header">
+        <h2>Detalle del asistente</h2>
+        <button class="modal-close" onclick="cerrarDetalle()">✕</button>
+      </div>
+      <div class="modal-body" id="detalleBody"></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmOverlay" onclick="cerrarConfirmClick(event)">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Eliminar registro</h2>
+        <button class="modal-close" onclick="cerrarConfirm()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-text">¿Eliminar la inscripción de <strong id="confirmNombre"></strong>?</p>
+        <p class="confirm-sub">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarConfirm()">Cancelar</button>
+        <button class="btn-danger" onclick="confirmarEliminar()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
